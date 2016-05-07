@@ -1,7 +1,6 @@
 //Priprava knjižnic
 var formidable = require("formidable");
 var util = require('util');
-var stranka = false;
 
 
 if (!process.env.PORT)
@@ -49,7 +48,7 @@ function davcnaStopnja(izvajalec, zanr) {
 
 // Prikaz seznama pesmi na strani
 streznik.get('/', function(zahteva, odgovor) {
-  if (!stranka) {
+  if (!zahteva.session.stranka) {
     odgovor.redirect('/prijava');
   }
   pb.all("SELECT Track.TrackId AS id, Track.Name AS pesem, \
@@ -241,14 +240,15 @@ streznik.post('/stranka', function(zahteva, odgovor) {
   var form = new formidable.IncomingForm();
   
   form.parse(zahteva, function (napaka1, polja, datoteke) {
-    stranka = true;
+    zahteva.session.stranka = polja.seznamStrank;
+    console.log(zahteva.session.stranka);
     odgovor.redirect('/');
   });
 })
 
 // Odjava stranke
 streznik.post('/odjava', function(zahteva, odgovor) {
-  stranka = false;
+  zahteva.session.stranka = null;
   odgovor.redirect('/prijava');
   
   
