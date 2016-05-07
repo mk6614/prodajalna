@@ -153,21 +153,34 @@ streznik.post('/izpisiRacunBaza', function(zahteva, odgovor) {
 
 // Izpis računa v HTML predstavitvi ali izvorni XML obliki
 streznik.get('/izpisiRacun/:oblika', function(zahteva, odgovor) {
-  var stranka = zahteva.session.stranka;
-  pesmiIzKosarice(zahteva, function(pesmi) {
-    if (!pesmi) {
-      odgovor.sendStatus(500);
-    } else if (pesmi.length == 0) {
-      odgovor.send("<p>V košarici nimate nobene pesmi, \
-        zato računa ni mogoče pripraviti!</p>");
-    } else {
-      odgovor.setHeader('content-type', 'text/xml');
-      odgovor.render('eslog', {
-        vizualiziraj: zahteva.params.oblika == 'html' ? true : false,
-        postavkeRacuna: pesmi
-      })  
-    }
-  })
+  vrniStranke(function(napaka1, stranke) {
+    var stranka = stranke[zahteva.session.stranka-1];
+    var naziv = stranka.FirstName + " " + stranka.LastName;
+    console.log(naziv);
+    pesmiIzKosarice(zahteva, function(pesmi) {
+      if (!pesmi) {
+        odgovor.sendStatus(500);
+      } else if (pesmi.length == 0) {
+        odgovor.send("<p>V košarici nimate nobene pesmi, \
+          zato računa ni mogoče pripraviti!</p>");
+      } else {
+        odgovor.setHeader('content-type', 'text/xml');
+        odgovor.render('eslog', {
+          vizualiziraj: zahteva.params.oblika == 'html' ? true : false,
+          postavkeRacuna: pesmi,
+          NazivPartnerja1: naziv,
+          NazivPartnerja2: stranka.Company,
+          Ulica1: stranka.Address,
+          Kraj: stranka.City,
+          telefon: stranka.Phone,
+          fax: stranka.Fax,
+          NazivDrzave: stranka.Country,
+          PostnaStevilka:	stranka.PostalCode,
+          ImeOsebe: naziv + " "+ stranka.Email
+        })  
+      }
+    });
+  });
 })
 
 // Privzeto izpiši račun v HTML obliki
@@ -234,12 +247,15 @@ streznik.post('/stranka', function(zahteva, odgovor) {
   var form = new formidable.IncomingForm();
   
   form.parse(zahteva, function (napaka1, polja, datoteke) {
+    zahteva.session.stranka = polja.seznamStrank;
+    console.log(polja.seznamStrank);
     odgovor.redirect('/')
   });
 })
 
 // Odjava stranke
 streznik.post('/odjava', function(zahteva, odgovor) {
+  zahteva.session.stranka = null;
     odgovor.redirect('/prijava') 
 })
 
