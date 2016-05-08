@@ -3,7 +3,6 @@ var formidable = require("formidable");
 var util = require('util');
 
 if (!process.env.PORT){
-  console.log('Strežnik 8080');
   process.env.PORT = 8080;
 } 
 
@@ -49,6 +48,9 @@ function davcnaStopnja(izvajalec, zanr) {
 
 // Prikaz seznama pesmi na strani
 streznik.get('/', function(zahteva, odgovor) {
+  if (!zahteva.session.stranka) {
+    odgovor.redirect('/prijava');
+  }
   pb.all("SELECT Track.TrackId AS id, Track.Name AS pesem, \
           Artist.Name AS izvajalec, Track.UnitPrice * " +
           razmerje_usd_eur + " AS cena, \
@@ -213,14 +215,12 @@ streznik.post('/prijava', function(zahteva, odgovor) {
     	  Phone, Fax, Email, SupportRepId) \
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
       //TODO: add fields and finalize
-      
         stmt.run(polja.FirstName, polja.LastName, polja.Company, polja.Address, polja.City, polja.State, polja.Country, polja.PostalCode, polja.Phone, polja.Fax, polja.Email, 3); 
         stmt.finalize();
         spr = "Stranka je bila uspešno registrirana.";
     } catch (err) {
       napaka2 = true;
       spr = "Prišlo je do napake pri registraciji nove stranke. Prosim preverite vnešene podatke in poskusite znova.";
-      
     }
   
     odgovor.end();
@@ -242,14 +242,20 @@ streznik.post('/stranka', function(zahteva, odgovor) {
   var form = new formidable.IncomingForm();
   
   form.parse(zahteva, function (napaka1, polja, datoteke) {
+    zahteva.session.stranka = polja.seznamStrank;
+    console.log(zahteva.session.stranka);
     odgovor.redirect('/');
   });
 });
 
 // Odjava stranke
 streznik.post('/odjava', function(zahteva, odgovor) {
-    odgovor.redirect('/prijava') ;
+  zahteva.session.stranka = null;
+  odgovor.redirect('/prijava');
 });
+
+
+
 
 
 
